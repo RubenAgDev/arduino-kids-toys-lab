@@ -1,0 +1,76 @@
+================================================================================
+ARDUINO MONSTER TRUCK CRASH DETECTOR - CIRCUIT & WIRING GUIDE
+================================================================================
+
+HARDWARE COMPONENTS REQUIRED:
+--------------------------------------------------------------------------------
+1. 1x Arduino Uno R3 / R4 or Arduino Nano
+2. 1x HC-SR04 Ultrasonic Distance Sensor (or SF-SR02)
+3. 1x Buzzer (Passive Buzzer recommended for sound effects, or 5V Active Buzzer)
+4. 3x LEDs (1x Green, 1x Yellow, 1x Red) - 5mm standard
+5. 3x 220Ω Resistors (for LEDs)
+6. 1x Breadboard & Jumper Wires (M-M / M-F)
+7. Toy Monster Truck + Toy Crush Cars (or cardboard boxes/Lego blocks)
+
+PIN CONNECTION TABLE:
+--------------------------------------------------------------------------------
+Component           Pin / Leg           Arduino Pin       Wire Color (Suggested)
+--------------------------------------------------------------------------------
+HC-SR04 Sensor      VCC                 5V                Red
+HC-SR04 Sensor      GND                 GND               Black
+HC-SR04 Sensor      TRIG                Digital Pin 9     Yellow
+HC-SR04 Sensor      ECHO                Digital Pin 10    Blue
+
+Buzzer              Positive (+) / S    Digital Pin 3     Orange
+Buzzer              Negative (-) / -    GND               Black
+
+Green LED           Anode (Long Leg)    Digital Pin 4     Green (via 220Ω resistor)
+Green LED           Cathode (Short Leg) GND               Black
+
+Yellow LED          Anode (Long Leg)    Digital Pin 5     Yellow (via 220Ω resistor)
+Yellow LED          Cathode (Short Leg) GND               Black
+
+Red LED             Anode (Long Leg)    Digital Pin 6     Red (via 220Ω resistor)
+Red LED             Cathode (Short Leg) GND               Black
+
+*Note: The Arduino's built-in LED on Pin 13 will also blink automatically!
+
+ASCII SCHEMATIC:
+--------------------------------------------------------------------------------
+
+           +-------------------------+
+           |       ARDUINO UNO       |
+           |                         |
+  [5V] ----| 5V                      |
+  [GND]----| GND                     |
+           |                         |
+           |                   Pin 9 |-----> [HC-SR04 TRIG]
+           |                  Pin 10 |<----- [HC-SR04 ECHO]
+           |                         |
+           |                   Pin 3 |-----> (+) [BUZZER] (-) ---> GND
+           |                         |
+           |                   Pin 4 |-----> [220Ω] ---> [GREEN LED] ---> GND
+           |                   Pin 5 |-----> [220Ω] ---> [YELLOW LED] ---> GND
+           |                   Pin 6 |-----> [220Ω] ---> [RED LED] ------> GND
+           +-------------------------+
+
+PHYSICAL SETUP TRACK LAYOUT:
+--------------------------------------------------------------------------------
+
+ [HC-SR04 SENSOR]                 [MONSTER TRUCK]              [PILE OF CARS]
+       ||                                ||                          ||
+       || <--------- Distance -------->  ||                          ||
+       ================================================================
+       0 cm                             2-4 cm                      10 cm
+      (Sensor)                      (Start / Ramp)              (CRASH IMPACT!)
+
+  1. Place the HC-SR04 Ultrasonic Sensor securely at the starting block or ramp.
+  2. The sensor's two "eyes" (Transmitter & Receiver) face down the track.
+  3. Place your stack of crushable toy cars at EXACTLY 10 cm from the sensor.
+  4. Place the monster truck right in front of the sensor (around 2-3 cm).
+  5. Push the monster truck! As it moves AWAY from the sensor toward the pile:
+     - Distance increases: 3cm -> 5cm -> 7cm -> 9cm
+     - Buzzer beeps accelerate and climb in pitch!
+     - LEDs flash from Green to Yellow to Red!
+     - AT 10 CM: SMASH! Strobe explosion & crash alarm siren sound!
+================================================================================

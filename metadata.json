@@ -1,0 +1,6 @@
+{
+  "name": "Arduino Monster Truck Crash Sensor",
+  "description": "PlatformIO Arduino project for a Monster Truck Crash toy featuring ultrasonic distance-to-intensity buzzers, LEDs, and interactive testing arena.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

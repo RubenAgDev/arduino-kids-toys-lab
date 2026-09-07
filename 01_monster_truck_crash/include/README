@@ -1,0 +1,3 @@
+This directory is intended for project header files.
+A header file (.h or .hpp) can define function prototypes, constants, and shared structures.
+For this single-file project, all code resides in src/main.cpp.
