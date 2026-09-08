@@ -50,61 +50,33 @@ export function playCrashSoundEffect(volume: number = 0.3): void {
 
   try {
     const now = ctx.currentTime;
+    
+    // Exact 3 repeats of the sound as requested!
+    for (let i = 0; i < 3; i++) {
+      // First tone of the blast (2000Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'square';
+      osc1.frequency.setValueAtTime(2000, now + i * 0.6);
+      gain1.gain.setValueAtTime(volume * 0.4, now + i * 0.6);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + i * 0.6 + 0.28);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now + i * 0.6);
+      osc1.stop(now + i * 0.6 + 0.3);
 
-    // Siren bursts (Phase 1)
-    for (let i = 0; i < 6; i++) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(i % 2 === 0 ? 1800 : 1200, now + i * 0.05);
-      gain.gain.setValueAtTime(volume * 0.3, now + i * 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + (i + 1) * 0.05);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now + i * 0.05);
-      osc.stop(now + (i + 1) * 0.05);
+      // Second tone of the blast (1200Hz)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(1200, now + i * 0.6 + 0.3);
+      gain2.gain.setValueAtTime(volume * 0.4, now + i * 0.6 + 0.3);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + i * 0.6 + 0.58);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + i * 0.6 + 0.3);
+      osc2.stop(now + i * 0.6 + 0.6);
     }
-
-    // Heavy crash impact rumble (Phase 2)
-    const rumbleOsc = ctx.createOscillator();
-    const rumbleGain = ctx.createGain();
-    rumbleOsc.type = 'sawtooth';
-    rumbleOsc.frequency.setValueAtTime(280, now + 0.3);
-    rumbleOsc.frequency.exponentialRampToValueAtTime(45, now + 1.2);
-
-    rumbleGain.gain.setValueAtTime(volume * 0.5, now + 0.3);
-    rumbleGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-
-    rumbleOsc.connect(rumbleGain);
-    rumbleGain.connect(ctx.destination);
-
-    rumbleOsc.start(now + 0.3);
-    rumbleOsc.stop(now + 1.2);
-
-    // Crunch noise buffer
-    const bufferSize = ctx.sampleRate * 0.8;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.25));
-    }
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(900, now + 0.3);
-    filter.frequency.exponentialRampToValueAtTime(150, now + 1.0);
-
-    const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(volume * 0.4, now + 0.3);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
-
-    noise.connect(filter);
-    filter.connect(noiseGain);
-    noiseGain.connect(ctx.destination);
-
-    noise.start(now + 0.3);
   } catch {
     // Fail silently if audio context is blocked
   }

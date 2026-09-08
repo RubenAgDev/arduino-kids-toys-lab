@@ -51,7 +51,7 @@ export default function App() {
         }
         folder.file(
           'README.md',
-          '# 🏎️ Monster Truck Crash Arena Sensor\n\nArduino Uno/Nano PlatformIO project. Flashes via VSCode.\nBuzzer and LEDs speed up as monster truck moves away toward 10cm pile of cars!'
+          '# 🏎️ Monster Truck Crash Arena Sensor\n\nArduino Uno/Nano PlatformIO project. Flashes via VSCode.\nBuzzer and LEDs speed up as monster truck moves away toward 30cm pile of cars!'
         );
       }
 
@@ -90,7 +90,7 @@ export default function App() {
                 </span>
               </div>
               <p className="text-xs text-slate-400 hidden sm:block">
-                Project 01: Monster Truck Crash Detector (10cm Impact Zone)
+                Project 01: Monster Truck Crash Detector (30cm Impact Zone)
               </p>
             </div>
           </div>
@@ -202,16 +202,16 @@ export default function App() {
                   Mounting Urgency & Accelerating Pace
                 </span>
                 <p className="text-slate-300 leading-relaxed">
-                  As the distance increases from 2.5cm towards 10cm, the beep interval decreases from 600ms to 40ms, and the pitch climbs from 650Hz to 1750Hz.
+                  As the distance increases from 3cm towards 30cm, the beep interval decreases from 600ms to 40ms, and the pitch climbs from 650Hz to 1750Hz.
                 </p>
               </div>
 
               <div className="space-y-1">
                 <span className="font-bold text-red-400 uppercase tracking-wider text-[11px] block">
-                  10 cm Crash Point Impact!
+                  30 cm Crash Point Impact!
                 </span>
                 <p className="text-slate-300 leading-relaxed">
-                  The pile of cars is calibrated at exactly 10 cm. When the truck impacts, the Arduino triggers a 500ms strobe alarm and an engine crunch rumble!
+                  The pile of cars is calibrated at exactly 30 cm. When the truck impacts, the Arduino triggers 3 siren bursts and holds the LEDs ON until reset!
                 </p>
               </div>
             </div>

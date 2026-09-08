@@ -35,14 +35,14 @@ export const CircuitGuide: React.FC = () => {
           <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
             <span className="font-mono text-amber-400 font-bold block mb-1">02. The Monster Truck</span>
             <p className="text-slate-300">
-              Place your toy monster truck in front of the sensor at the start line (<strong>~2.5 cm</strong>). When stationary, the Green LED glows and buzzer beeps slowly.
+              Place your toy monster truck in front of the sensor at the start line (<strong>0-3 cm</strong>). When stationary, the Green LED glows and buzzer is silent.
             </p>
           </div>
 
           <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-            <span className="font-mono text-red-400 font-bold block mb-1">03. The 10cm Crash Target</span>
+            <span className="font-mono text-red-400 font-bold block mb-1">03. The 30cm Crash Target</span>
             <p className="text-slate-300">
-              Place your pile of crushable toy cars (or cardboard blocks) at <strong>EXACTLY 10 cm</strong> from the sensor. When the truck hits 10cm: <em>BOOM!</em> Crash siren triggers!
+              Place your pile of crushable toy cars (or cardboard blocks) at <strong>EXACTLY 30 cm</strong> from the sensor. When the truck hits 30cm: <em>BOOM!</em> Crash siren triggers!
             </p>
           </div>
         </div>

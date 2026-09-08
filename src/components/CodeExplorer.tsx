@@ -28,8 +28,8 @@ export const CodeExplorer: React.FC = () => {
           `\n\nTRACK SETUP:\n` +
           `1. Place HC-SR04 ultrasonic sensor at start ramp (0cm).\n` +
           `2. Monster truck sits at start line (2.5cm).\n` +
-          `3. Position pile of crushable cars at 10cm.\n` +
-          `4. When truck moves away toward 10cm, buzzer and LEDs escalate until CRASH!\n`;
+          `3. Position pile of crushable cars at 30cm.\n` +
+          `4. When truck moves away toward 30cm, buzzer and LEDs escalate until CRASH!\n`;
       }
       default:
         return MAIN_CPP_CONTENT;
@@ -77,7 +77,7 @@ export const CodeExplorer: React.FC = () => {
         }
         folder.file(
           'README.md',
-          `# Monster Truck Crash Sensor (PlatformIO Project)\n\nFlash this folder to Arduino Uno/Nano using VSCode + PlatformIO.\nTarget crash distance: 10 cm away from the sensor!`
+          `# Monster Truck Crash Sensor (PlatformIO Project)\n\nFlash this folder to Arduino Uno/Nano using VSCode + PlatformIO.\nTarget crash distance: 30 cm away from the sensor!`
         );
       }
 
@@ -208,7 +208,7 @@ export const CodeExplorer: React.FC = () => {
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
           <span>
-            <strong>Key Innovation:</strong> Inverted distance math (<code className="text-amber-300">progress = (dist - 2.5) / 7.5</code>) speeds up buzzer and flashes as monster truck approaches the 10cm crash point!
+            <strong>Key Innovation:</strong> Inverted distance math (<code className="text-amber-300">progress = (dist - 3.0) / 27.0</code>) speeds up buzzer and flashes as monster truck approaches the 30cm crash point!
           </span>
         </div>
         <a

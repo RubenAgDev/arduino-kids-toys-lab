@@ -1,24 +1,4 @@
-export interface PinConnection {
-  component: string;
-  pin: string;
-  arduinoPin: string;
-  color: string;
-  notes: string;
-}
-
-export const PIN_CONNECTIONS: PinConnection[] = [
-  { component: 'HC-SR04 Ultrasonic', pin: 'VCC', arduinoPin: '5V', color: '#ef4444', notes: 'Power rail' },
-  { component: 'HC-SR04 Ultrasonic', pin: 'GND', arduinoPin: 'GND', color: '#1f2937', notes: 'Ground rail' },
-  { component: 'HC-SR04 Ultrasonic', pin: 'TRIG', arduinoPin: 'Pin 9', color: '#eab308', notes: '10μs trigger pulse' },
-  { component: 'HC-SR04 Ultrasonic', pin: 'ECHO', arduinoPin: 'Pin 10', color: '#3b82f6', notes: 'Echo duration measurement' },
-  { component: 'Buzzer (Passive/Active)', pin: 'Positive (+)', arduinoPin: 'Pin 3', color: '#f97316', notes: 'PWM-capable pin for tone()' },
-  { component: 'Buzzer (Passive/Active)', pin: 'Negative (-)', arduinoPin: 'GND', color: '#1f2937', notes: 'Ground' },
-  { component: 'Green LED', pin: 'Anode (+)', arduinoPin: 'Pin 4', color: '#22c55e', notes: 'Start / Safe Zone (0-3cm)' },
-  { component: 'Yellow LED', pin: 'Anode (+)', arduinoPin: 'Pin 5', color: '#eab308', notes: 'Warning Zone' },
-  { component: 'Red LED', pin: 'Anode (+)', arduinoPin: 'Pin 6', color: '#ef4444', notes: 'Crash Zone (30cm)' },
-];
-
-export const MAIN_CPP_CONTENT = `/**
+/**
  * ==============================================================================
  * Project: Monster Truck Crash Detector (Arduino Kids Games & Toys)
  * Based on: SunFounder Ultrasonic Parking Sensor V5
@@ -74,6 +54,7 @@ const bool USE_PASSIVE_BUZZER  = true;
 unsigned long lastBeepToggleTime = 0;
 bool beepState = false;
 bool hasCrashed = false;
+unsigned long crashTriggerTime = 0;
 
 // Filter buffer for ultrasonic readings
 float lastValidDistance = 2.5f;
@@ -91,15 +72,18 @@ void printTelemetry(float distance, int beepInterval, float intensityPct);
 // SETUP: Pin Modes and Serial Communication
 // ==============================================================================
 void setup() {
+  // Configure Ultrasonic Sensor pins
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
 
+  // Configure Output indicators
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(LED_GREEN_PIN, OUTPUT);
   pinMode(LED_YELLOW_PIN, OUTPUT);
   pinMode(LED_RED_PIN, OUTPUT);
   pinMode(ONBOARD_LED_PIN, OUTPUT);
 
+  // Initial pin states (low)
   digitalWrite(TRIG_PIN, LOW);
   digitalWrite(BUZZER_PIN, LOW);
   digitalWrite(LED_GREEN_PIN, LOW);
@@ -107,6 +91,7 @@ void setup() {
   digitalWrite(LED_RED_PIN, LOW);
   digitalWrite(ONBOARD_LED_PIN, LOW);
 
+  // Start Serial Monitor for debug and kids play telemetry
   Serial.begin(115200);
   delay(200);
 
@@ -118,6 +103,7 @@ void setup() {
   Serial.println(F("Driving away will increase sound & light speed!"));
   Serial.println(F("--------------------------------------------------"));
 
+  // Fun power-on chirp sequence
   for (int f = 600; f <= 1200; f += 200) {
     if (USE_PASSIVE_BUZZER) tone(BUZZER_PIN, f, 50);
     digitalWrite(ONBOARD_LED_PIN, HIGH);
@@ -134,6 +120,7 @@ void setup() {
 void loop() {
   float currentDistance = measureDistance();
 
+  // If distance measurement failed or out of range, hold previous distance
   if (currentDistance <= 0.0f || currentDistance > MAX_TRACK_DISTANCE) {
     currentDistance = lastValidDistance;
   } else {
@@ -142,14 +129,15 @@ void loop() {
 
   // --------------------------------------------------------------------------
   // CASE 1: RESET / START ZONE (0 - 3 cm)
+  // Silent ready state. Only moves past this when motion is detected > 3cm
   // --------------------------------------------------------------------------
   if (currentDistance <= START_DISTANCE_CM) {
     hasCrashed = false;
-    digitalWrite(LED_GREEN_PIN, HIGH);
+    digitalWrite(LED_GREEN_PIN, HIGH); // Solid green means ready
     digitalWrite(LED_YELLOW_PIN, LOW);
     digitalWrite(LED_RED_PIN, LOW);
     digitalWrite(ONBOARD_LED_PIN, LOW);
-    playBeep(false, 0);
+    playBeep(false, 0); // Ensure silence
     delay(50);
     return;
   }
@@ -158,11 +146,12 @@ void loop() {
   // CASE 2: POST-CRASH HOLD
   // --------------------------------------------------------------------------
   if (hasCrashed) {
+    // LEDs stay ON solidly until the truck is returned to the 0-3cm start zone
     digitalWrite(LED_GREEN_PIN, HIGH);
     digitalWrite(LED_YELLOW_PIN, HIGH);
     digitalWrite(LED_RED_PIN, HIGH);
     digitalWrite(ONBOARD_LED_PIN, HIGH);
-    playBeep(false, 0);
+    playBeep(false, 0); // Ensure silence
     delay(50);
     return;
   }
@@ -171,83 +160,131 @@ void loop() {
   // CASE 3: TRUCK AT OR PAST THE CRASH POINT (30 cm)
   // --------------------------------------------------------------------------
   if (currentDistance >= CRASH_DISTANCE_CM) {
+    // TRIGGER CRASH EXPLOSION!
     triggerCrashSequence();
     return;
   }
 
   // --------------------------------------------------------------------------
   // CASE 4: TRUCK APPROACHING THE CRASH POINT (3.1 cm -> 29.9 cm)
+  // Distance is increasing away from sensor -> Frequency & flash rate INCREASES!
   // --------------------------------------------------------------------------
+  // Calculate proximity intensity from 0.0 (start) to 1.0 (crash)
   float progress = (currentDistance - START_DISTANCE_CM) / (CRASH_DISTANCE_CM - START_DISTANCE_CM);
   if (progress < 0.0f) progress = 0.0f;
   if (progress > 0.99f) progress = 0.99f;
 
+  // Beep interval: 600ms (slow) down to 40ms (ultra-fast near impact)
   int beepInterval = (int)(600.0f - (progress * 560.0f));
   if (beepInterval < 40) beepInterval = 40;
 
+  // Buzzer pitch: 650 Hz (calm rumble) up to 1750 Hz (high alert scream)
   int beepPitch = (int)(650.0f + (progress * 1100.0f));
 
+  // Non-blocking timer for blinking & beeping
   unsigned long now = millis();
   if (now - lastBeepToggleTime >= (unsigned long)beepInterval) {
     lastBeepToggleTime = now;
     beepState = !beepState;
+
+    // Toggle buzzer and LEDs
     playBeep(beepState, beepPitch);
     updateLeds(currentDistance, beepState);
   }
 
+  // Periodic telemetry readout to Serial Monitor (every 150ms)
   static unsigned long lastSerialTime = 0;
   if (millis() - lastSerialTime > 150) {
     lastSerialTime = millis();
     printTelemetry(currentDistance, beepInterval, progress * 100.0f);
   }
 
-  delay(15);
+  delay(15); // Sensor recovery delay
 }
 
+// ==============================================================================
+// MEASURE DISTANCE VIA HC-SR04 (cm)
+// ==============================================================================
 float measureDistance() {
+  // Ensure trigger pin is low
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(2);
+
+  // Send 10 microsecond HIGH pulse to initiate measurement
   digitalWrite(TRIG_PIN, HIGH);
   delayMicroseconds(10);
   digitalWrite(TRIG_PIN, LOW);
+
+  // Read echo pulse duration in microseconds (timeout 25ms ~ 4.2m)
   unsigned long duration = pulseIn(ECHO_PIN, HIGH, 25000);
-  if (duration == 0) return -1.0f;
-  return (duration * 0.0343f) / 2.0f;
+
+  if (duration == 0) {
+    return -1.0f; // Timeout or no echo
+  }
+
+  // Speed of sound = 343 m/s = 0.0343 cm/us
+  // Distance = (Time * Speed) / 2 (round trip)
+  float dist = (duration * 0.0343f) / 2.0f;
+  return dist;
 }
 
+// ==============================================================================
+// LED STATUS CONTROLLER
+// ==============================================================================
 void updateLeds(float distance, bool blinkState) {
+  // Always mirror blink state to onboard Arduino pin 13
   digitalWrite(ONBOARD_LED_PIN, blinkState ? HIGH : LOW);
+
+  // Adjusting zones for the new 30cm track
   if (distance < 12.0f) {
+    // ZONE 1: Green Zone (Safe, near sensor / starting line)
     digitalWrite(LED_GREEN_PIN, blinkState ? HIGH : LOW);
     digitalWrite(LED_YELLOW_PIN, LOW);
     digitalWrite(LED_RED_PIN, LOW);
   } else if (distance < 22.0f) {
+    // ZONE 2: Yellow Zone (Approaching danger, speeding up)
     digitalWrite(LED_GREEN_PIN, LOW);
     digitalWrite(LED_YELLOW_PIN, blinkState ? HIGH : LOW);
     digitalWrite(LED_RED_PIN, LOW);
   } else {
+    // ZONE 3: Red Zone (Imminent crash, 22.0cm -> 30.0cm)
     digitalWrite(LED_GREEN_PIN, LOW);
     digitalWrite(LED_YELLOW_PIN, LOW);
     digitalWrite(LED_RED_PIN, blinkState ? HIGH : LOW);
   }
 }
 
+// ==============================================================================
+// BUZZER CONTROLLER
+// ==============================================================================
 void playBeep(bool state, int frequency) {
   if (state) {
-    if (USE_PASSIVE_BUZZER) tone(BUZZER_PIN, frequency);
-    else digitalWrite(BUZZER_PIN, HIGH);
+    if (USE_PASSIVE_BUZZER) {
+      tone(BUZZER_PIN, frequency);
+    } else {
+      digitalWrite(BUZZER_PIN, HIGH);
+    }
   } else {
-    if (USE_PASSIVE_BUZZER) noTone(BUZZER_PIN);
-    else digitalWrite(BUZZER_PIN, LOW);
+    if (USE_PASSIVE_BUZZER) {
+      noTone(BUZZER_PIN);
+    } else {
+      digitalWrite(BUZZER_PIN, LOW);
+    }
   }
 }
 
+// ==============================================================================
+// CRASH SEQUENCE: 3 Blasts, then LEDs hold solid ON
+// ==============================================================================
 void triggerCrashSequence() {
-  Serial.println(F("\\n========================================================"));
+  Serial.println(F("\n========================================================"));
   Serial.println(F("💥💥💥 BOOOOOOM! CRASH IMPACT AT 30 CM! 💥💥💥"));
-  Serial.println(F("========================================================\\n"));
+  Serial.println(F("   MONSTER TRUCK TOTALLY SMASHED THE PILE OF CARS!     "));
+  Serial.println(F("========================================================\n"));
 
+  // Phase 1: Sound repeats exactly 3 times!
   for (int i = 0; i < 3; i++) {
+    // Blast ON
     digitalWrite(LED_GREEN_PIN, HIGH);
     digitalWrite(LED_YELLOW_PIN, HIGH);
     digitalWrite(LED_RED_PIN, HIGH);
@@ -256,6 +293,7 @@ void triggerCrashSequence() {
     else digitalWrite(BUZZER_PIN, HIGH);
     delay(300);
 
+    // Blast OFF
     digitalWrite(LED_GREEN_PIN, LOW);
     digitalWrite(LED_YELLOW_PIN, LOW);
     digitalWrite(LED_RED_PIN, LOW);
@@ -265,17 +303,23 @@ void triggerCrashSequence() {
     delay(300);
   }
 
+  // Phase 2: Silence the buzzer permanently after 3 blasts
   if (USE_PASSIVE_BUZZER) noTone(BUZZER_PIN);
   else digitalWrite(BUZZER_PIN, LOW);
 
+  // Phase 3: LEDs stay ON solidly until the truck is returned to 0-3cm
   digitalWrite(LED_GREEN_PIN, HIGH);
   digitalWrite(LED_YELLOW_PIN, HIGH);
   digitalWrite(LED_RED_PIN, HIGH);
   digitalWrite(ONBOARD_LED_PIN, HIGH);
 
+  // Set crash flag so main loop holds this state
   hasCrashed = true;
 }
 
+// ==============================================================================
+// TELEMETRY: ASCII Arena Visualizer for Serial Monitor
+// ==============================================================================
 void printTelemetry(float distance, int beepInterval, float intensityPct) {
   Serial.print(F("Distance: "));
   if (distance < 10.0f) Serial.print(F(" "));
@@ -283,6 +327,8 @@ void printTelemetry(float distance, int beepInterval, float intensityPct) {
   Serial.print(F(" cm | Speed: "));
   Serial.print(beepInterval);
   Serial.print(F("ms | Intensity: ["));
+
+  // 10-step progress bar
   int bars = (int)(intensityPct / 10.0f);
   if (bars > 10) bars = 10;
   for (int i = 0; i < 10; i++) {
@@ -294,86 +340,3 @@ void printTelemetry(float distance, int beepInterval, float intensityPct) {
   Serial.print((int)intensityPct);
   Serial.println(F("%"));
 }
-`;
-
-export const PLATFORMIO_INI_CONTENT = `; PlatformIO Project Configuration File
-;
-;   Build options: build flags, source filter
-;   Upload options: custom upload port, speed and extra flags
-;   Library options: dependencies, extra library storages
-;   Advanced options: extra scripting
-;
-; Please visit documentation for the other options and examples
-; https://docs.platformio.org/page/projectconf.html
-
-[platformio]
-default_envs = uno
-description = Monster Truck Crash Sensor: Buzzer and LEDs speed up as truck drives away toward the crash pile at 30cm!
-
-; ------------------------------------------------------------------------------
-; Environment: Arduino Uno (Standard 5V ATmega328P)
-; ------------------------------------------------------------------------------
-[env:uno]
-platform = atmelavr
-board = uno
-framework = arduino
-monitor_speed = 115200
-monitor_filters = time, colorize
-
-; ------------------------------------------------------------------------------
-; Environment: Arduino Nano (New Bootloader - post-2018 genuine/clones)
-; ------------------------------------------------------------------------------
-[env:nano]
-platform = atmelavr
-board = nanoatmega328new
-framework = arduino
-monitor_speed = 115200
-monitor_filters = time, colorize
-
-; ------------------------------------------------------------------------------
-; Environment: Arduino Nano (Old Bootloader - common on cheap CH340 clones)
-; ------------------------------------------------------------------------------
-[env:nano_old_bootloader]
-platform = atmelavr
-board = nanoatmega328
-framework = arduino
-monitor_speed = 115200
-monitor_filters = time, colorize
-`;
-
-export const SUNFOUNDER_ORIGINAL_CONTENT = `// ... (Extracted SunFounder Code kept for reference)
-// Original parking sensor triggers when distance DECREASES.
-`;
-
-export const PROJECTS_LIST = [
-  {
-    id: '01_monster_truck_crash',
-    number: '01',
-    title: 'Monster Truck Crash Sensor',
-    folderName: '01_monster_truck_crash',
-    description: 'Buzzer and LEDs speed up as the monster truck drives AWAY toward the 30cm crash target!',
-    sensorUsed: 'HC-SR04 Ultrasonic',
-    difficulty: 'Beginner',
-    status: 'Ready to Flash'
-  },
-  {
-    id: '02_laser_tripwire_nerf',
-    number: '02',
-    title: 'Nerf Laser Tripwire Alarm',
-    folderName: '02_laser_tripwire_nerf',
-    description: 'Trigger a servo and siren when a Nerf dart breaks the invisible laser barrier.',
-    sensorUsed: 'Laser Module + Photoresistor',
-    difficulty: 'Intermediate',
-    status: 'Coming Soon'
-  },
-  {
-    id: '03_hot_wheels_speed_trap',
-    number: '03',
-    title: 'Hot Wheels Speed Trap',
-    folderName: '03_hot_wheels_speed_trap',
-    description: 'Calculate scale MPH of Hot Wheels cars using dual IR obstacle sensors.',
-    sensorUsed: '2x IR Obstacle Avoidance',
-    difficulty: 'Advanced',
-    status: 'Coming Soon'
-  }
-];

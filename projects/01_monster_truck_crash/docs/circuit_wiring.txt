@@ -1,0 +1,20 @@
+ARDUINO MONSTER TRUCK CRASH SENSOR - PIN CONNECTIONS
+====================================================================================
+Component                    | Component Pin      | Arduino    | Notes
+-----------------------------+--------------------+------------+--------------------
+HC-SR04 Ultrasonic           | VCC                | 5V         | Power rail
+HC-SR04 Ultrasonic           | GND                | GND        | Ground rail
+HC-SR04 Ultrasonic           | TRIG               | Pin 9      | 10μs trigger pulse
+HC-SR04 Ultrasonic           | ECHO               | Pin 10     | Echo duration measurement
+Buzzer (Passive/Active)      | Positive (+)       | Pin 3      | PWM-capable pin for tone()
+Buzzer (Passive/Active)      | Negative (-)       | GND        | Ground
+Green LED                    | Anode (+)          | Pin 4      | Start / Safe Zone (0-3cm)
+Yellow LED                   | Anode (+)          | Pin 5      | Warning Zone
+Red LED                      | Anode (+)          | Pin 6      | Crash Zone (30cm)
+
+TRACK SETUP:
+1. Mount the HC-SR04 ultrasonic sensor at the start gate/ramp (0 cm).
+2. Place your toy monster truck in front of the sensor at the start line (0-3 cm).
+3. Place your stack of crushable toy cars at EXACTLY 30 cm from the sensor.
+4. Push the truck AWAY from the sensor. As it moves toward the 30 cm mark, the warning gets faster.
+5. AT 30 CM: SMASH! The system triggers 3 siren repeats and holds the LEDs ON.
